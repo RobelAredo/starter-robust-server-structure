@@ -4,6 +4,7 @@ const counts = require("../data/counts-data");
 const validId = (req, res, next) => {
   const { flipId } = req.params;
   const foundFlip = flips.find((flip) => flip.id === Number(flipId));
+  res.locals.flip = foundFlip;
   if (!foundFlip) next({ status: 404, message: `Flip id not found: ${flipId}` });
   next();
 }
@@ -34,18 +35,19 @@ function create (req, res, next) {
 }
 
 function list(req, res) {
-  res.json({ data: flips });
+  const { countId } = req.params;
+  console.log(countId);
+  const byResult = countId ? flip => flip.result === countId : () => true;
+  res.json({ data: flips.filter(byResult) });
 }
 
-function findId(req, res, next) {
-  const { flipId } = req.params;
-  const foundFlip = flips.find((flip) => flip.id === Number(flipId));
+function read(req, res, next) {
+  const foundFlip = res.locals.flip;
   res.json({ data: foundFlip });
 }
 
 const update = (req, res) => {
-  const { flipId } = req.params;
-  const foundFlip = flips.find(flip => flip.id == Number(flipId));
+  const foundFlip = res.locals.flip;
   const originalResult = foundFlip.result;
   const { data: { result } = {} } = req.body;
 
@@ -69,7 +71,7 @@ const destroy = (req, res) => {
 
 module.exports = {
   list,
-  read: [validId, findId],
+  read: [validId, read],
   create: [bodyHasResultProperty, validResult, create],
   update: [validId, bodyHasResultProperty, validResult, update],
   delete: [validId, destroy]
